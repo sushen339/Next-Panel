@@ -1,0 +1,2204 @@
+{{ template "page/head_start" .}}
+<style>
+  .ant-table:not(.ant-table-expanded-row .ant-table) {
+    outline: 1px solid #f0f0f0;
+    outline-offset: -1px;
+    border-radius: 1rem;
+    overflow-x: hidden;
+  }
+  .ant-table-thead > tr > th {
+    white-space: nowrap;
+  }
+  .dark .ant-table:not(.ant-table-expanded-row .ant-table) {
+    outline-color: var(--dark-color-table-ring);
+  }
+  .ant-modal-body .ant-input-group.ant-input-group-compact {
+    display: block;
+  }
+  .ant-modal-body .ant-input-group.ant-input-group-compact .ant-input-affix-wrapper,
+  .ant-modal-body .ant-input-group.ant-input-group-compact .ant-input-search-button {
+    width: 100%;
+  }
+  .ant-modal-body .ant-input-group.ant-input-group-compact .ant-input {
+    white-space: normal;
+    height: auto;
+    min-height: 80px;
+  }
+  .ant-table .ant-table-content .ant-table-scroll .ant-table-body {
+    overflow-y: hidden;
+  }
+  .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper {
+	  margin:-10px 22px !important;
+  }
+  .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper .ant-table {
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+  }
+  .ant-table .ant-table-content .ant-table-tbody tr:last-child tr:last-child td {
+	  border-bottom-color: transparent;
+  }
+  .ant-table .ant-table-tbody tr:last-child.ant-table-expanded-row .ant-table-wrapper .ant-table-tbody>tr:last-child>td:first-child {
+    border-bottom-left-radius: 6px;
+  }
+  .ant-table .ant-table-tbody tr:last-child.ant-table-expanded-row .ant-table-wrapper .ant-table-tbody>tr:last-child>td:last-child {
+    border-bottom-right-radius: 6px;
+  }
+  @media (min-width: 769px) {
+    .ant-layout-content {
+      margin: 24px 16px;
+    }
+  }
+  @media (max-width: 768px) {
+    .ant-card-body {
+      padding: .5rem;
+    }
+    .ant-table .ant-table-content .ant-table-tbody tr:last-child .ant-table-wrapper {
+	    margin:-10px 2px !important;
+    }
+  }
+  .dark .ant-switch-small:not(.ant-switch-checked) {
+    background-color: var(--dark-color-surface-100) !important;
+  }
+  .ant-custom-popover-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 5px 0;
+  }
+  .ant-col-sm-24 {
+    margin: 0.5rem -2rem 0.5rem 2rem;
+  }
+  tr.hideExpandIcon .ant-table-row-expand-icon {
+    display: none;
+  }
+  .infinite-tag {
+    padding: 0 5px;
+    border-radius: 2rem;
+    min-width: 50px;
+    min-height: 22px;
+  }
+  .infinite-bar .ant-progress-inner .ant-progress-bg {
+    background-color: #F2EAF1;
+    border: #D5BED2 solid 1px;
+  }
+  .dark .infinite-bar .ant-progress-inner .ant-progress-bg {
+    background-color: #7a316f !important;
+    border: #7a316f solid 1px;
+  }
+  .ant-collapse {
+    margin: 5px 0;
+  }
+  .info-large-tag {
+    max-width: 200px;
+    overflow: hidden;
+  }
+  .client-comment {
+    font-size: 12px;
+    opacity: 0.75;
+    cursor: help;
+  }
+  .client-email {
+    font-weight: 500;
+  }
+  .client-popup-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .online-animation .ant-badge-status-dot {
+    animation: onlineAnimation 1.2s linear infinite;
+  }
+  @keyframes onlineAnimation {
+    0%,
+    50%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    10% {
+      transform: scale(1.5);
+      opacity: .2;
+    }
+  }
+  .tr-table-box {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+  }
+  .tr-table-rt {
+    flex-basis: 70px;
+    min-width: 70px;
+    text-align: end;
+  }
+  .tr-table-lt {
+    flex-basis: 70px;
+    min-width: 70px;
+    text-align: start;
+  }
+  .tr-table-bar {
+    flex-basis: 160px;
+    min-width: 60px;
+  }
+  .tr-infinity-ch {
+    font-size: 14pt;
+    max-height: 24px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .ant-table-expanded-row .ant-table .ant-table-body {
+    overflow-x: hidden;
+  }
+  .ant-table-expanded-row .ant-table-tbody>tr>td {
+    padding: 10px 2px;
+  }
+  .ant-table-expanded-row .ant-table-thead>tr>th {
+    padding: 12px 2px;
+  }
+</style>
+{{ template "page/head_end" .}}
+
+{{ template "page/body_start" .}}
+<a-layout id="app" v-cloak :class="themeSwitcher.currentTheme">
+  <a-sidebar></a-sidebar>
+  <a-layout id="content-layout">
+    <a-layout-content>
+      <a-spin :spinning="loadingStates.spinning" :delay="500" tip='{{ i18n "loading"}}'>
+        <transition name="list" appear>
+          <a-alert type="error" v-if="showAlert && loadingStates.fetched" :style="{ marginBottom: '10px' }"
+            message='{{ i18n "secAlertTitle" }}'
+            color="red"
+            description='{{ i18n "secAlertSsl" }}'
+            show-icon closable>
+          </a-alert>
+        </transition>
+        <transition name="list" appear>
+          <a-row v-if="!loadingStates.fetched">
+            <a-card :style="{ textAlign: 'center', padding: '30px 0', marginTop: '10px', background: 'transparent', border: 'none' }">
+              <a-spin tip='{{ i18n "loading" }}'></a-spin>
+            </a-card>
+          </a-row>
+          <a-row :gutter="[isMobile ? 8 : 16, isMobile ? 0 : 12]" v-else>
+            <a-col>
+              <a-card size="small" :style="{ padding: '16px' }" hoverable>
+                <a-row>
+                  <a-col :sm="12" :md="5">
+                    <a-custom-statistic title='{{ i18n "pages.inbounds.totalDownUp" }}' :value="`${SizeFormatter.sizeFormat(total.up)} / ${SizeFormatter.sizeFormat(total.down)}`">
+                      <template #prefix>
+                        <a-icon type="swap"></a-icon>
+                      </template>
+                    </a-custom-statistic>
+                  </a-col>
+                  <a-col :sm="12" :md="5">
+                    <a-custom-statistic title='{{ i18n "pages.inbounds.totalUsage" }}' :value="SizeFormatter.sizeFormat(total.up + total.down)" :style="{ marginTop: isMobile ? '10px' : 0 }">
+                      <template #prefix>
+                        <a-icon type="pie-chart"></a-icon>
+                      </template>
+                    </a-custom-statistic>
+                  </a-col>
+                  <a-col :sm="12" :md="5">
+                    <a-custom-statistic title='{{ i18n "pages.inbounds.allTimeTrafficUsage" }}' :value="SizeFormatter.sizeFormat(total.allTime)" :style="{ marginTop: isMobile ? '10px' : 0 }">
+                      <template #prefix>
+                        <a-icon type="history"></a-icon>
+                      </template>
+                    </a-custom-statistic>
+                  </a-col>
+                  <a-col :sm="12" :md="5">
+                    <a-custom-statistic title='{{ i18n "pages.inbounds.inboundCount" }}' :value="dbInbounds.length" :style="{ marginTop: isMobile ? '10px' : 0 }">
+                      <template #prefix>
+                        <a-icon type="bars"></a-icon>
+                      </template>
+                    </a-custom-statistic>
+                  </a-col>
+                  <a-col :sm="12" :md="4">
+                    <a-custom-statistic title='{{ i18n "clients" }}' value=" " :style="{ marginTop: isMobile ? '10px' : 0 }">
+                      <template #prefix>
+                        <a-space direction="horizontal">
+                          <a-icon type="team"></a-icon>
+                          <div>
+                            <a-back-top :target="() => document.getElementById('content-layout')" visibility-height="200"></a-back-top>
+                            <a-tag color="green">[[ total.clients ]]</a-tag>
+                            <a-popover title='{{ i18n "disabled" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                              <template slot="content">
+                                <div v-for="clientEmail in total.deactive"><span>[[ clientEmail ]]</span></div>
+                              </template>
+                              <a-tag v-if="total.deactive.length">[[ total.deactive.length ]]</a-tag>
+                            </a-popover>
+                            <a-popover title='{{ i18n "depleted" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                              <template slot="content">
+                                <div v-for="clientEmail in total.depleted"><span>[[ clientEmail ]]</span></div>
+                              </template>
+                              <a-tag color="red" v-if="total.depleted.length">[[ total.depleted.length ]]</a-tag>
+                            </a-popover>
+                            <a-popover title='{{ i18n "depletingSoon" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                              <template slot="content">
+                                <div v-for="clientEmail in total.expiring"><span>[[ clientEmail ]]</span></div>
+                              </template>
+                              <a-tag color="orange" v-if="total.expiring.length">[[ total.expiring.length ]]</a-tag>
+                            </a-popover>
+                            <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                              <template slot="content">
+                                <div v-for="clientEmail in onlineClients"><span>[[ clientEmail ]]</span></div>
+                              </template>
+                              <a-tag color="blue" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
+                            </a-popover>
+                          </div>
+                        </a-space>
+                      </template>
+                    </a-custom-statistic>
+                  </a-col>
+                </a-row>
+              </a-card>
+            </a-col>
+            <a-col>
+              <a-card hoverable>
+                <template #title>
+                  <a-space direction="horizontal">
+                    <a-button type="primary" icon="plus" @click="openAddInbound">
+                      <template v-if="!isMobile">{{ i18n "pages.inbounds.addInbound" }}</template>
+                    </a-button>
+                    <a-dropdown :trigger="['click']">
+                      <a-button type="primary" icon="menu">
+                        <template v-if="!isMobile">{{ i18n "pages.inbounds.generalActions" }}</template>
+                      </a-button>
+                      <a-menu slot="overlay" @click="a => generalActions(a)" :theme="themeSwitcher.currentTheme">
+                        <a-menu-item key="import">
+                          <a-icon type="import"></a-icon>
+                          {{ i18n "pages.inbounds.importInbound" }}
+                        </a-menu-item>
+                        <a-menu-item key="resetInbounds">
+                          <a-icon type="reload"></a-icon>
+                          {{ i18n "pages.inbounds.resetAllTraffic" }}
+                        </a-menu-item>
+                        <a-menu-item key="resetClients">
+                          <a-icon type="file-done"></a-icon>
+                          {{ i18n "pages.inbounds.resetAllClientTraffics" }}
+                        </a-menu-item>
+                        <a-menu-item key="delDepletedClients" :style="{ color: '#FF4D4F' }">
+                          <a-icon type="rest"></a-icon>
+                          {{ i18n "pages.inbounds.delDepletedClients" }}
+                        </a-menu-item>
+                      </a-menu>
+                    </a-dropdown>
+                    <a-dropdown :trigger="['click']">
+                      <a-button type="primary" icon="export">
+                        <template v-if="!isMobile">节点操作</template>
+                      </a-button>
+                      <a-menu slot="overlay" @click="a => exportActions(a)" :theme="themeSwitcher.currentTheme">
+                        <!-- 导出全部节点 -->
+                        <a-menu-item key="export">
+                          <a-icon type="export"></a-icon>
+                          导出全部链接
+                        </a-menu-item>
+                        
+                        <!-- 导出全部订阅 -->
+                        <a-menu-item key="subs" v-if="subSettings.enable">
+                          <a-icon type="export"></a-icon>
+                          导出全部订阅
+                        </a-menu-item>
+                        
+                        <!-- 导出总订阅 -->
+                        <a-menu-item key="exportTotalSubs" v-if="subSettings.enable">
+                          <a-icon type="export"></a-icon>
+                          导出总订阅
+                        </a-menu-item>
+                        
+                        <!-- 分割线 -->
+                        <a-menu-divider></a-menu-divider>
+                        
+                        <!-- 导出选中节点 -->
+                        <a-menu-item key="exportSelected">
+                          <a-icon type="export"></a-icon>
+                          导出选中链接
+                        </a-menu-item>
+                        
+                        <!-- 导出选中订阅 -->
+                        <a-menu-item key="exportSelectedSubs" v-if="subSettings.enable">
+                          <a-icon type="export"></a-icon>
+                          导出选中订阅
+                        </a-menu-item>
+                        
+                        <!-- 分割线 -->
+                        <a-menu-divider></a-menu-divider>
+                        
+                        <!-- 删除选中节点 -->
+                        <a-menu-item key="deleteSelected" :style="{ color: '#FF4D4F' }">
+                          <a-icon type="delete"></a-icon>
+                          删除选中节点
+                        </a-menu-item>
+                      </a-menu>
+                    </a-dropdown>
+                  </a-space>
+                </template>
+                <template #extra>
+                  <a-button-group>
+                    <a-button icon="sync" @click="manualRefresh" :loading="refreshing"></a-button>
+                    <a-popover placement="bottomRight" trigger="click" :overlay-class-name="themeSwitcher.currentTheme">
+                      <template #title>
+                        <div class="ant-custom-popover-title">
+                          <a-switch v-model="isRefreshEnabled" @change="toggleRefresh" size="small"></a-switch>
+                          <span>{{ i18n "pages.inbounds.autoRefresh" }}</span>
+                        </div>
+                      </template>
+                      <template #content>
+                        <a-space direction="vertical">
+                          <span>{{ i18n "pages.inbounds.autoRefreshInterval" }}</span>
+                          <a-select v-model="refreshInterval"
+                              :disabled="!isRefreshEnabled"
+                              :style="{ width: '100%' }"
+                              @change="changeRefreshInterval"
+                              :dropdown-class-name="themeSwitcher.currentTheme">
+                            <a-select-option v-for="key in [5,10,30,60]" :value="key*1000">[[ key ]]s</a-select-option>
+                          </a-select>
+                        </a-space>
+                      </template>
+                      <a-button icon="down"></a-button>
+                    </a-popover>
+                  </a-button-group>
+                </template>
+                <a-space direction="vertical">
+                  <div :style="isMobile ? {} : { display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }">
+                    <a-switch v-model="enableFilter"
+                        :style="isMobile ? { marginBottom: '.5rem', display: 'flex' } : { marginRight: '.5rem' }"
+                        @change="toggleFilter">
+                      <a-icon slot="checkedChildren" type="search"></a-icon>
+                      <a-icon slot="unCheckedChildren" type="filter"></a-icon>
+                    </a-switch>
+                    <a-input v-if="!enableFilter" v-model.lazy="searchKey" placeholder='{{ i18n "search" }}' autofocus :style="{ maxWidth: '300px' }" :size="isMobile ? 'small' : ''"></a-input>
+                    <a-radio-group v-if="enableFilter" v-model="filterBy" @change="filterInbounds" button-style="solid" :size="isMobile ? 'small' : ''">
+                      <a-radio-button value="">{{ i18n "none" }}</a-radio-button>
+                      <a-radio-button value="deactive">{{ i18n "disabled" }}</a-radio-button>
+                      <a-radio-button value="depleted">{{ i18n "depleted" }}</a-radio-button>
+                      <a-radio-button value="expiring">{{ i18n "depletingSoon" }}</a-radio-button>
+                      <a-radio-button value="online">{{ i18n "online" }}</a-radio-button>
+                    </a-radio-group>
+                    <div v-if="selectedInbounds.length > 0" style="margin-left: 20px; display: flex; align-items: center;">
+                      <a-button size="small" @click="unselectAllInbounds">取消选择</a-button>
+                      <span style="margin-left: 10px;">
+                        已选中 <a-tag color="#52c41a" v-text="selectedInbounds.length"></a-tag> 个节点
+                      </span>
+                    </div>
+                  </div>
+                  <a-table :columns="isMobile ? mobileColumns : columns" :row-key="dbInbound => dbInbound.id"
+                      :data-source="searchedInbounds"
+                      :scroll="isMobile ? {} : { x: 1000 }"
+                      :pagination=pagination(searchedInbounds)
+                      :expand-icon-as-cell="false"
+                      :expand-row-by-click="false"
+                      :expand-icon-column-index="1"
+                      :indent-size="0"
+                      :row-class-name="dbInbound => (dbInbound.isMultiUser() ? '' : 'hideExpandIcon')"
+                      :custom-row="(record) => ({
+                        on: {
+                          click: () => {
+                            toggleInboundSelection(record.id, !isInboundSelected(record.id));
+                          }
+                        }
+                      })"
+                      size="small"
+                      :style="{ marginTop: '10px' }"
+                      :locale='{ filterConfirm: `{{ i18n "confirm" }}`, filterReset: `{{ i18n "reset" }}`, emptyText: `{{ i18n "noData" }}` }'>
+                    <template slot="checkboxCol" slot-scope="text, dbInbound">
+                      <div style="display: flex; justify-content: center; align-items: center;" @click.stop>
+                        <a-checkbox :checked="isInboundSelected(dbInbound.id)" @change="e => toggleInboundSelection(dbInbound.id, e.target.checked)"></a-checkbox>
+                      </div>
+                    </template>
+                    <template slot="action" slot-scope="text, dbInbound">
+                      <a-dropdown :trigger="['click']" @click.stop>
+                        <a-icon @click="e => e.preventDefault()" type="more" :style="{ fontSize: '20px', textDecoration: 'solid' }"></a-icon>
+                        <a-menu slot="overlay" @click="a => clickAction(a, dbInbound)" :theme="themeSwitcher.currentTheme">
+                          <a-menu-item key="edit">
+                            <a-icon type="edit"></a-icon>
+                            {{ i18n "edit" }}
+                          </a-menu-item>
+                          <a-menu-item key="qrcode" v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard">
+                            <a-icon type="qrcode"></a-icon>
+                            {{ i18n "qrCode" }}
+                          </a-menu-item>
+                          <template v-if="dbInbound.isMultiUser()">
+                            <a-menu-item key="addClient">
+                              <a-icon type="user-add"></a-icon>
+                              {{ i18n "pages.client.add"}}
+                            </a-menu-item>
+                            <a-menu-item key="addBulkClient">
+                              <a-icon type="usergroup-add"></a-icon>
+                              {{ i18n "pages.client.bulk"}}
+                            </a-menu-item>
+                            <a-menu-item key="resetClients">
+                              <a-icon type="file-done"></a-icon>
+                              {{ i18n "pages.inbounds.resetInboundClientTraffics"}}
+                            </a-menu-item>
+                            <a-menu-item key="export">
+                              <a-icon type="export"></a-icon>
+                              {{ i18n "pages.inbounds.export"}}
+                            </a-menu-item>
+                            <a-menu-item key="subs" v-if="subSettings.enable">
+                              <a-icon type="export"></a-icon>
+                              导出订阅
+                            </a-menu-item>
+                            <a-menu-item key="delDepletedClients" :style="{ color: '#FF4D4F' }">
+                              <a-icon type="rest"></a-icon>
+                              {{ i18n "pages.inbounds.delDepletedClients" }}
+                            </a-menu-item>
+                          </template>
+                          <template v-else>
+                            <a-menu-item key="showInfo">
+                              <a-icon type="info-circle"></a-icon>
+                              {{ i18n "info"}}
+                            </a-menu-item>
+                          </template>
+                          <a-menu-item key="clipboard">
+                            <a-icon type="copy"></a-icon>
+                            {{ i18n "pages.inbounds.exportInbound" }}
+                          </a-menu-item>
+                          <a-menu-item key="resetTraffic">
+                            <a-icon type="retweet"></a-icon> {{ i18n "pages.inbounds.resetTraffic" }}
+                          </a-menu-item>
+                          <a-menu-item key="clone">
+                            <a-icon type="block"></a-icon> {{ i18n "pages.inbounds.clone"}}
+                          </a-menu-item>
+                          <a-menu-item key="delete">
+                            <span :style="{ color: '#FF4D4F' }">
+                              <a-icon type="delete"></a-icon> {{ i18n "delete"}}
+                            </span>
+                          </a-menu-item>
+                          <a-menu-item v-if="isMobile">
+                            <a-switch size="small" v-model="dbInbound.enable" @change="switchEnable(dbInbound.id,dbInbound.enable)"></a-switch>
+                            {{ i18n "pages.inbounds.enable" }}
+                          </a-menu-item>
+                        </a-menu>
+                      </a-dropdown>
+                    </template>
+                    <template slot="protocol" slot-scope="text, dbInbound">
+                      <a-tag :style="{ margin: '0' }" color="purple">[[ dbInbound.protocol ]]</a-tag>
+                      <template v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
+                        <a-tag :style="{ margin: '0' }" color="green">[[ dbInbound.toInbound().stream.network ]]</a-tag>
+                        <a-tag :style="{ margin: '0' }" v-if="dbInbound.toInbound().stream.isTls" color="blue">TLS</a-tag>
+                        <a-tag :style="{ margin: '0' }" v-if="dbInbound.toInbound().stream.isReality" color="blue">Reality</a-tag>
+                      </template>
+                    </template>
+                    <template slot="clients" slot-scope="text, dbInbound">
+                      <template v-if="clientCount[dbInbound.id]">
+                        <a-tag :style="{ margin: '0' }" color="green">[[ clientCount[dbInbound.id].clients ]]</a-tag>
+                        <a-popover title='{{ i18n "disabled" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                          <template slot="content">
+                            <div v-for="clientEmail in clientCount[dbInbound.id].deactive" :key="clientEmail" class="client-popup-item">
+                              <span>[[ clientEmail ]]</span>
+                              <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                <template #title>
+                                  [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                </template>
+                                <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                              </a-tooltip>
+                            </div>
+                          </template>
+                          <a-tag :style="{ margin: '0', padding: '0 2px' }" v-if="clientCount[dbInbound.id].deactive.length">[[ clientCount[dbInbound.id].deactive.length ]]</a-tag>
+                        </a-popover>
+                        <a-popover title='{{ i18n "depleted" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                          <template slot="content">
+                            <div v-for="clientEmail in clientCount[dbInbound.id].depleted" :key="clientEmail" class="client-popup-item">
+                              <span>[[ clientEmail ]]</span>
+                              <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                <template #title>
+                                  [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                </template>
+                                <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                              </a-tooltip>
+                            </div>
+                          </template>
+                          <a-tag :style="{ margin: '0', padding: '0 2px' }" color="red" v-if="clientCount[dbInbound.id].depleted.length">[[ clientCount[dbInbound.id].depleted.length ]]</a-tag>
+                        </a-popover>
+                        <a-popover title='{{ i18n "depletingSoon" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                          <template slot="content">
+                            <div v-for="clientEmail in clientCount[dbInbound.id].expiring" :key="clientEmail" class="client-popup-item">
+                              <span>[[ clientEmail ]]</span>
+                              <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                <template #title>
+                                  [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                </template>
+                                <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                              </a-tooltip>
+                            </div>
+                          </template>
+                          <a-tag :style="{ margin: '0', padding: '0 2px' }" color="orange" v-if="clientCount[dbInbound.id].expiring.length">[[ clientCount[dbInbound.id].expiring.length ]]</a-tag>
+                        </a-popover>
+                        <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                          <template slot="content">
+                            <div v-for="clientEmail in clientCount[dbInbound.id].online" :key="clientEmail" class="client-popup-item">
+                              <span>[[ clientEmail ]]</span>
+                              <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                <template #title>
+                                  [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                </template>
+                                <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                              </a-tooltip>
+                            </div>
+                          </template>
+                          <a-tag :style="{ margin: '0', padding: '0 2px' }" color="blue" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
+                        </a-popover>
+                      </template>
+                    </template>
+				    <template slot="deviceLimit" slot-scope="text, dbInbound">
+                        <span v-if="dbInbound.deviceLimit > 0">[[ dbInbound.deviceLimit ]]</span>
+                        <span v-else>{{ i18n "pages.inbounds.unlimited" }}</span>
+                    </template>
+                    <template slot="traffic" slot-scope="text, dbInbound">
+                      <a-popover :overlay-class-name="themeSwitcher.currentTheme">
+                        <template slot="content">
+                          <table cellpadding="2" width="100%">
+                            <tr>
+                              <td>↑[[ SizeFormatter.sizeFormat(dbInbound.up) ]]</td>
+                              <td>↓[[ SizeFormatter.sizeFormat(dbInbound.down) ]]</td>
+                            </tr>
+                            <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
+                              <td>{{ i18n "remained" }}</td>
+                              <td>[[ SizeFormatter.sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
+                            </tr>
+                          </table>
+                        </template>
+                        <a-tag :color="ColorUtils.usageColor(dbInbound.up + dbInbound.down, app.trafficDiff, dbInbound.total)">
+                          [[ SizeFormatter.sizeFormat(dbInbound.up + dbInbound.down) ]] /
+                          <template v-if="dbInbound.total > 0">
+                              [[ SizeFormatter.sizeFormat(dbInbound.total) ]]
+                          </template>
+                          <template v-else>
+                            <svg height="10px" width="14px" viewBox="0 0 640 512" fill="currentColor">
+                              <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z" fill="currentColor"></path>
+                            </svg>
+                          </template>
+                        </a-tag>
+                      </a-popover>
+                    </template>
+                    <template slot="allTimeInbound" slot-scope="text, dbInbound">
+                      <a-tag>[[ SizeFormatter.sizeFormat(dbInbound.allTime || 0) ]]</a-tag>
+                    </template>
+                    <template slot="enable" slot-scope="text, dbInbound">
+                      <a-switch v-model="dbInbound.enable" @change="switchEnable(dbInbound.id,dbInbound.enable)" @click.stop></a-switch>
+                    </template>
+                    <template slot="expiryTime" slot-scope="text, dbInbound">
+                      <a-popover v-if="dbInbound.expiryTime > 0" :overlay-class-name="themeSwitcher.currentTheme">
+                        <template slot="content" v-if="app.datepicker === 'gregorian'">
+                          [[ DateUtil.formatMillis(dbInbound.expiryTime) ]]
+                        </template>
+                        <template v-else slot="content">
+                          [[ DateUtil.convertToJalalian(moment(dbInbound.expiryTime)) ]]
+                        </template>
+                        <a-tag :style="{ minWidth: '50px' }" :color="ColorUtils.usageColor(new Date().getTime(), app.expireDiff, dbInbound._expiryTime)">
+                          [[ remainedDays(dbInbound._expiryTime) ]]
+                        </a-tag>
+                      </a-popover>
+                      <a-tag v-else color="purple" class="infinite-tag">
+                        <svg height="10px" width="14px" viewBox="0 0 640 512" fill="currentColor">
+                          <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z" fill="currentColor"></path>
+                        </svg>
+                      </a-tag>
+                    </template>
+                    <template slot="info" slot-scope="text, dbInbound">
+                      <a-popover placement="bottomRight" :overlay-class-name="themeSwitcher.currentTheme" trigger="click" @click.stop>
+                        <template slot="content">
+                          <table cellpadding="2">
+                            <tr>
+                              <td>{{ i18n "pages.inbounds.protocol" }}</td>
+                              <td>
+                                <a-tag :style="{ margin: '0' }" color="purple">[[ dbInbound.protocol ]]</a-tag>
+                                <template v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
+                                  <a-tag :style="{ margin: '0' }" color="blue">[[ dbInbound.toInbound().stream.network ]]</a-tag>
+                                  <a-tag :style="{ margin: '0' }" v-if="dbInbound.toInbound().stream.isTls" color="green">tls</a-tag>
+                                  <a-tag :style="{ margin: '0' }" v-if="dbInbound.toInbound().stream.isReality" color="green">reality</a-tag>
+                                </template>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>{{ i18n "pages.inbounds.port" }}</td>
+                              <td><a-tag>[[ dbInbound.port ]]</a-tag></td>
+                            </tr>
+                            <tr v-if="clientCount[dbInbound.id]">
+                              <td>{{ i18n "clients" }}</td>
+                              <td>
+                                <a-tag :style="{ margin: '0' }" color="blue">[[ clientCount[dbInbound.id].clients ]]</a-tag>
+                                <a-popover title='{{ i18n "disabled" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                                  <template slot="content">
+                                    <div v-for="clientEmail in clientCount[dbInbound.id].deactive" :key="clientEmail" class="client-popup-item">
+                                      <span>[[ clientEmail ]]</span>
+                                      <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template #title>
+                                          [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                        </template>
+                                        <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                                      </a-tooltip>
+                                    </div>
+                                  </template>
+                                  <a-tag :style="{ margin: '0', padding: '0 2px' }" v-if="clientCount[dbInbound.id].deactive.length">[[ clientCount[dbInbound.id].deactive.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover title='{{ i18n "depleted" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                                  <template slot="content">
+                                    <div v-for="clientEmail in clientCount[dbInbound.id].depleted" :key="clientEmail" class="client-popup-item">
+                                      <span>[[ clientEmail ]]</span>
+                                      <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template #title>
+                                          [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                        </template>
+                                        <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                                      </a-tooltip>
+                                    </div>
+                                  </template>
+                                  <a-tag :style="{ margin: '0', padding: '0 2px' }" color="red" v-if="clientCount[dbInbound.id].depleted.length">[[ clientCount[dbInbound.id].depleted.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover title='{{ i18n "depletingSoon" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                                  <template slot="content">
+                                    <div v-for="clientEmail in clientCount[dbInbound.id].expiring" :key="clientEmail" class="client-popup-item">
+                                      <span>[[ clientEmail ]]</span>
+                                      <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template #title>
+                                          [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                        </template>
+                                        <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                                      </a-tooltip>
+                                    </div>
+                                  </template>
+                                  <a-tag :style="{ margin: '0', padding: '0 2px' }" color="orange" v-if="clientCount[dbInbound.id].expiring.length">[[ clientCount[dbInbound.id].expiring.length ]]</a-tag>
+                                </a-popover>
+                                <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
+                                  <template slot="content">
+                                    <div v-for="clientEmail in clientCount[dbInbound.id].online" :key="clientEmail" class="client-popup-item">
+                                      <span>[[ clientEmail ]]</span>
+                                      <a-tooltip :overlay-class-name="themeSwitcher.currentTheme">
+                                        <template #title>
+                                          [[ clientCount[dbInbound.id].comments.get(clientEmail) ]]
+                                        </template>
+                                        <a-icon type="message" v-if="clientCount[dbInbound.id].comments.get(clientEmail)"></a-icon>
+                                      </a-tooltip>
+                                    </div>
+                                  </template>
+                                  <a-tag :style="{ margin: '0', padding: '0 2px' }" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
+                                </a-popover>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>{{ i18n "pages.inbounds.traffic" }}</td>
+                              <td>
+                                <a-popover :overlay-class-name="themeSwitcher.currentTheme">
+                                  <template slot="content">
+                                    <table cellpadding="2" width="100%">
+                                      <tr>
+                                        <td>↑[[ SizeFormatter.sizeFormat(dbInbound.up) ]]</td>
+                                        <td>↓[[ SizeFormatter.sizeFormat(dbInbound.down) ]]</td>
+                                      </tr>
+                                      <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
+                                        <td>{{ i18n "remained" }}</td>
+                                        <td>[[ SizeFormatter.sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
+                                      </tr>
+                                    </table>
+                                  </template>
+                                  <a-tag :color="ColorUtils.usageColor(dbInbound.up + dbInbound.down, app.trafficDiff, dbInbound.total)">
+                                      [[ SizeFormatter.sizeFormat(dbInbound.up + dbInbound.down) ]] /
+                                      <template v-if="dbInbound.total > 0">
+                                          [[ SizeFormatter.sizeFormat(dbInbound.total) ]]
+                                      </template>
+                                    <template v-else>
+                                      <svg height="10px" width="14px" viewBox="0 0 640 512" fill="currentColor">
+                                        <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z" fill="currentColor"></path>
+                                      </svg>
+                                    </template>
+                                  </a-tag>
+                                </a-popover>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>{{ i18n "pages.inbounds.expireDate" }}</td>
+                              <td>
+                                <a-tag :style="{ minWidth: '50px', textAlign: 'center' }" v-if="dbInbound.expiryTime > 0"
+                                  :color="dbInbound.isExpiry? 'red': 'blue'">
+                                  <template v-if="app.datepicker === 'gregorian'">
+                                    [[ DateUtil.formatMillis(dbInbound.expiryTime) ]]
+                                  </template>
+                                  <template v-else>
+                                    [[ DateUtil.convertToJalalian(moment(dbInbound.expiryTime)) ]]
+                                  </template>
+                                </a-tag>
+                                <a-tag v-else :style="{ textAlign: 'center' }" color="purple" class="infinite-tag">
+                                  <svg height="10px" width="14px" viewBox="0 0 640 512" fill="currentColor">
+                                    <path d="M484.4 96C407 96 349.2 164.1 320 208.5C290.8 164.1 233 96 155.6 96C69.75 96 0 167.8 0 256s69.75 160 155.6 160C233.1 416 290.8 347.9 320 303.5C349.2 347.9 407 416 484.4 416C570.3 416 640 344.2 640 256S570.3 96 484.4 96zM155.6 368C96.25 368 48 317.8 48 256s48.25-112 107.6-112c67.75 0 120.5 82.25 137.1 112C276 285.8 223.4 368 155.6 368zM484.4 368c-67.75 0-120.5-82.25-137.1-112C364 226.2 416.6 144 484.4 144C543.8 144 592 194.2 592 256S543.8 368 484.4 368z" fill="currentColor"></path>
+                                  </svg>
+                                </a-tag>
+                              </td>
+                            </tr>
+                          </table>
+                        </template>
+                        <a-badge>
+                          <a-icon v-if="!dbInbound.enable" slot="count" type="pause-circle" :style="{ color: themeSwitcher.isDarkTheme ? '#2c3950' : '#bcbcbc' }"></a-icon>
+                          <a-button shape="round" size="small" :style="{ fontSize: '14px', padding: '0 10px' }">
+                            <a-icon type="info"></a-icon>
+                          </a-button>
+                        </a-badge>
+                      </a-popover>
+                    </template>
+                    <template slot="expandedRowRender" slot-scope="record">
+                      <a-table
+                        :row-key="client => client.id"
+                        :columns="isMobile ? innerMobileColumns : innerColumns"
+                        :data-source="getInboundClients(record)"
+                        :pagination=pagination(getInboundClients(record))
+                        :style="{ margin: `-10px ${isMobile ? '2px' : '22px'} -11px` }">
+                        {{template "component/aClientTable"}}
+                      </a-table>
+                    </template>
+                  </a-table>
+                </a-space>
+              </a-card>
+            </a-col>
+          </a-row>
+        </transition>
+      </a-spin>
+    </a-layout-content>
+  </a-layout>
+</a-layout>
+{{template "page/body_scripts" .}}
+<script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/uri/URI.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
+{{template "component/aSidebar" .}}
+{{template "component/aThemeSwitch" .}}
+{{template "component/aCustomStatistic" .}}
+{{template "component/aPersianDatepicker" .}}
+{{template "modals/inboundModal"}}
+{{template "modals/promptModal"}}
+{{template "modals/qrcodeModal"}}
+{{template "modals/textModal"}}
+{{template "modals/inboundInfoModal"}}
+{{template "modals/clientsModal"}}
+{{template "modals/clientsBulkModal"}}
+<script>
+    const columns = [{
+        title: "",
+        align: 'center',
+        dataIndex: 'checkbox',
+        width: 30,
+        fixed: 'left',
+        scopedSlots: { customRender: 'checkboxCol' },
+    }, {
+        title: "ID",
+        align: 'center',
+        dataIndex: "id",
+        width: 40,
+        responsive: ["xs"],
+    }, {
+        title: '{{ i18n "pages.inbounds.operate" }}',
+        align: 'center',
+        width: 30,
+        scopedSlots: { customRender: 'action' },
+    }, {
+        title: '{{ i18n "pages.inbounds.enable" }}',
+        align: 'center',
+        width: 30,
+        scopedSlots: { customRender: 'enable' },
+    }, {
+        title: '{{ i18n "pages.inbounds.remark" }}',
+        align: 'center',
+        width: 50,
+        dataIndex: "remark",
+    }, {
+        title: '{{ i18n "pages.inbounds.port" }}',
+        align: 'center',
+        dataIndex: "port",
+        width: 40,
+    }, {
+        title: '{{ i18n "pages.inbounds.protocol" }}',
+        align: 'center',
+        width: 70,
+        scopedSlots: { customRender: 'protocol' },
+    }, {
+        title: '{{ i18n "clients" }}',
+        align: 'left',
+        width: 40,
+        scopedSlots: { customRender: 'clients' },
+    }, {
+       // 【中文注释】: 这是修改后的“设备限制”列定义
+        title: '{{ i18n "pages.inbounds.deviceLimit" }}',
+        dataIndex: "deviceLimit",
+        align: "center",
+        width: 40,
+       // 【中文注释】: 将错误的 customRender 改为 scopedSlots
+        scopedSlots: { customRender: 'deviceLimit' },
+    }, {
+        title: '{{ i18n "pages.inbounds.traffic" }}',
+        align: 'center',
+        width: 50,
+        scopedSlots: { customRender: 'traffic' },
+    }, {
+        title: '{{ i18n "pages.inbounds.expireDate" }}',
+        align: 'center',
+        width: 40,
+        scopedSlots: { customRender: 'expiryTime' },
+    }];
+
+    const mobileColumns = [{
+        title: "",
+        align: 'center',
+        dataIndex: 'checkbox',
+        width: 30,
+        fixed: 'left',
+        scopedSlots: { customRender: 'checkboxCol' },
+    }, {
+        title: "ID",
+        align: 'right',
+        dataIndex: "id",
+        width: 10,
+        responsive: ["s"],
+    }, {
+        title: '{{ i18n "pages.inbounds.operate" }}',
+        align: 'center',
+        width: 25,
+        scopedSlots: { customRender: 'action' },
+    }, {
+        title: '{{ i18n "pages.inbounds.remark" }}',
+        align: 'left',
+        width: 70,
+        dataIndex: "remark",
+    }, {
+        title: '{{ i18n "pages.inbounds.info" }}',
+        align: 'center',
+        width: 10,
+        scopedSlots: { customRender: 'info' },
+    }];
+
+    const innerColumns = [
+        { title: '{{ i18n "pages.inbounds.operate" }}', width: 65, scopedSlots: { customRender: 'actions' } },
+        { title: '{{ i18n "pages.inbounds.enable" }}', width: 35, scopedSlots: { customRender: 'enable' } },
+        { title: '{{ i18n "online" }}', width: 35, scopedSlots: { customRender: 'online' } },
+        { title: '{{ i18n "pages.inbounds.client" }}', width: 80, scopedSlots: { customRender: 'client' } },
+        { title: '{{ i18n "pages.inbounds.traffic" }}', width: 80, align: 'center', scopedSlots: { customRender: 'traffic' } },
+        { title: '{{ i18n "pages.inbounds.allTimeTraffic" }}', width: 80, align: 'center', scopedSlots: { customRender: 'allTime' } },
+
+		// 中文注释: 在子表格中新增“限速”列
+        {
+            title: '{{ i18n "pages.inbounds.speedLimit" }}',
+            width: 80,
+            align: 'center',
+            dataIndex: 'speedLimit',
+            customRender: (text) => (text > 0 ? `${text} KB/s` : '无限制'),
+        },
+
+        { title: '{{ i18n "pages.inbounds.expireDate" }}', width: 80, align: 'center', scopedSlots: { customRender: 'expiryTime' } },
+    ];
+
+    const innerMobileColumns = [
+        { title: '{{ i18n "pages.inbounds.operate" }}', width: 10, align: 'center', scopedSlots: { customRender: 'actionMenu' } },
+        { title: '{{ i18n "pages.inbounds.client" }}', width: 90, align: 'left', scopedSlots: { customRender: 'client' } },
+        { title: '{{ i18n "pages.inbounds.info" }}', width: 10, align: 'center', scopedSlots: { customRender: 'info' } },
+    ];
+
+    const app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#app',
+        mixins: [MediaQueryMixin],
+        data: {
+            themeSwitcher,
+            persianDatepicker,
+            selectedInbounds: [], // 存储选中的入站ID
+            loadingStates: {
+              fetched: false,
+              spinning: false
+            },
+            inbounds: [],
+            dbInbounds: [],
+            searchKey: '',
+            enableFilter: false,
+            filterBy: '',
+            searchedInbounds: [],
+            expireDiff: 0,
+            trafficDiff: 0,
+            defaultCert: '',
+            defaultKey: '',
+            clientCount: [],
+            onlineClients: [],
+            lastOnlineMap: {},
+            isRefreshEnabled: localStorage.getItem("isRefreshEnabled") === "true" ? true : false,
+            refreshing: false,
+            refreshInterval: Number(localStorage.getItem("refreshInterval")) || 5000,
+            subSettings: {
+                enable : false,
+                subTitle : '',
+                subURI : '',
+                subJsonURI : '',
+            },
+            remarkModel: '-ieo',
+            datepicker: 'gregorian',
+            tgBotEnable: false,
+            showAlert: false,
+            ipLimitEnable: false,
+            pageSize: 50,
+
+			inboundLink: '', // 新增：用来存储生成的可复制链接
+            // 【中文注释】: 新增数据属性，用于控制“一键配置”模态框的显示状态
+
+
+
+            // 【中文注释】: 新增数据属性，用于存储“一键配置”模态框中选择的预设值
+
+            // 【中文注释】: 新增Reality SNI的备选列表，用于随机选择
+            realityDestinations: [
+                'tesla.com:443',
+                'sega.com:443',
+                'apple.com:443',
+                'icloud.com:443',
+                'lovelive-anime.jp:443',
+                'meta.com:443',
+            ],
+        },
+		
+        mounted() {
+            // 【中文注释】：这是唯一且正确的 mounted 钩子。
+            // 【修改】：将两个 mounted 钩子的逻辑合并到这里。
+
+            // 检查非 https 协议，用于安全提示
+            if (window.location.protocol !== "https:") {
+                this.showAlert = true;
+            }
+
+            // 初始化面板设置和入站列表
+            this.getDefaultSettings();
+            if (this.isRefreshEnabled) {
+                this.startDataRefreshLoop();
+            } else {
+                this.getDBInbounds();
+            }
+            
+            // 确保菜单和UI正确更新
+            setTimeout(() => {
+                this.$forceUpdate();
+                console.log('菜单已更新，选中节点数:', this.selectedInbounds.length);
+            }, 500);
+
+        },
+		
+        methods: {
+            loading(spinning = true) {
+                this.loadingStates.spinning = spinning;
+            },
+            async getDBInbounds() {
+                this.refreshing = true;
+                const msg = await HttpUtil.get('/panel/api/inbounds/list');
+                if (!msg.success) {
+                    this.refreshing = false;
+                    return;
+                }
+
+                await this.getLastOnlineMap();
+                await this.getOnlineUsers();
+
+                this.setInbounds(msg.obj);
+                setTimeout(() => {
+                    this.refreshing = false;
+                }, 500);
+            },
+            async getOnlineUsers() {
+                const msg = await HttpUtil.post('panel/api/inbounds/onlines');
+                if (!msg.success) {
+                    return;
+                }
+                this.onlineClients = msg.obj != null ? msg.obj : [];
+            },
+            async getLastOnlineMap() {
+                const msg = await HttpUtil.post('/panel/api/inbounds/lastOnline');
+                if (!msg.success || !msg.obj) return;
+                this.lastOnlineMap = msg.obj || {}
+            },
+            async getDefaultSettings() {
+                const msg = await HttpUtil.post('/panel/setting/defaultSettings');
+                if (!msg.success) {
+                    return;
+                }
+                with(msg.obj){
+                    this.expireDiff = expireDiff * 86400000;
+                    this.trafficDiff = trafficDiff * 1073741824;
+                    this.defaultCert = defaultCert;
+                    this.defaultKey = defaultKey;
+                    this.tgBotEnable = tgBotEnable;
+                    this.subSettings = {
+                        enable : subEnable,
+                        subTitle : subTitle,
+                        subURI: subURI,
+                        subJsonURI: subJsonURI
+                    };
+                    this.pageSize = pageSize;
+                    this.remarkModel = remarkModel;
+                    this.datepicker = datepicker;
+                    this.ipLimitEnable = ipLimitEnable;
+                }
+            },
+            setInbounds(dbInbounds) {
+                this.inbounds.splice(0);
+                this.dbInbounds.splice(0);
+                this.clientCount.splice(0);
+                for (const inbound of dbInbounds) {
+                    const dbInbound = new DBInbound(inbound);
+                    to_inbound = dbInbound.toInbound()
+                    this.inbounds.push(to_inbound);
+                    this.dbInbounds.push(dbInbound);
+                    if ([Protocols.VMESS, Protocols.VLESS, Protocols.TROJAN, Protocols.SHADOWSOCKS].includes(inbound.protocol)) {
+                        if (dbInbound.isSS && (!to_inbound.isSSMultiUser)) {
+                            continue;
+                        }
+                        this.clientCount[inbound.id] = this.getClientCounts(inbound, to_inbound);
+                    }
+                }
+                if (!this.loadingStates.fetched) {
+                    this.loadingStates.fetched = true
+                }
+                if(this.enableFilter){
+                    this.filterInbounds();
+                } else {
+                    this.searchInbounds(this.searchKey);
+                }
+            },
+            getClientCounts(dbInbound, inbound) {
+                let clientCount = 0, active = [], deactive = [], depleted = [], expiring = [], online = [], comments = new Map();
+                clients = inbound.clients;
+                clientStats = dbInbound.clientStats
+                now = new Date().getTime()
+                if (clients) {
+                    clientCount = clients.length;
+                    if (dbInbound.enable) {
+                        clients.forEach(client => {
+                            if (client.comment) {
+                              comments.set(client.email, client.comment)
+                            }
+                            if (client.enable) {
+                                active.push(client.email);
+                                if (this.isClientOnline(client.email)) online.push(client.email);
+                            } else {
+                                deactive.push(client.email);
+                            }
+                        });
+                        clientStats.forEach(client => {
+                            if (!client.enable) {
+                                depleted.push(client.email);
+                            } else {
+                                if ((client.expiryTime > 0 && (client.expiryTime - now < this.expireDiff)) ||
+                                    (client.total > 0 && (client.total - (client.up + client.down) < this.trafficDiff))) expiring.push(client.email);
+                            }
+                        });
+                    } else {
+                        clients.forEach(client => {
+                            deactive.push(client.email);
+                        });
+                    }
+                }
+                return {
+                    clients: clientCount,
+                    active: active,
+                    deactive: deactive,
+                    depleted: depleted,
+                    expiring: expiring,
+                    online: online,
+                    comments: comments,
+                };
+            },
+
+            searchInbounds(key) {
+                if (ObjectUtil.isEmpty(key)) {
+                    this.searchedInbounds = this.dbInbounds.slice();
+                } else {
+                    this.searchedInbounds.splice(0, this.searchedInbounds.length);
+                    this.dbInbounds.forEach(inbound => {
+                        if (ObjectUtil.deepSearch(inbound, key)) {
+                            const newInbound = new DBInbound(inbound);
+                            const inboundSettings = JSON.parse(inbound.settings);
+                            if (inboundSettings.hasOwnProperty('clients')) {
+                                const searchedSettings = { "clients": [] };
+                                inboundSettings.clients.forEach(client => {
+                                    if (ObjectUtil.deepSearch(client, key)) {
+                                        searchedSettings.clients.push(client);
+                                    }
+                                });
+                                newInbound.settings = Inbound.Settings.fromJson(inbound.protocol, searchedSettings);
+                            }
+                            this.searchedInbounds.push(newInbound);
+                        }
+                    });
+                }
+            },
+            filterInbounds() {
+                if (ObjectUtil.isEmpty(this.filterBy)) {
+                    this.searchedInbounds = this.dbInbounds.slice();
+                } else {
+                    this.searchedInbounds.splice(0, this.searchedInbounds.length);
+                    this.dbInbounds.forEach(inbound => {
+                        const newInbound = new DBInbound(inbound);
+                        const inboundSettings = JSON.parse(inbound.settings);
+                        if (this.clientCount[inbound.id] && this.clientCount[inbound.id].hasOwnProperty(this.filterBy)){
+                            const list = this.clientCount[inbound.id][this.filterBy];
+                            if (list.length > 0) {
+                                const filteredSettings = { "clients": [] };
+                                if (inboundSettings.clients) {
+                                    inboundSettings.clients.forEach(client => {
+                                        if (list.includes(client.email)) {
+                                            filteredSettings.clients.push(client);
+                                        }
+                                    });
+                                }
+                                newInbound.settings = Inbound.Settings.fromJson(inbound.protocol, filteredSettings);
+                                this.searchedInbounds.push(newInbound);
+                            }
+                        }
+                    });
+                }
+            },
+            toggleFilter(){
+                if(this.enableFilter) {
+                    this.searchKey = '';
+                } else {
+                    this.filterBy = '';
+                    this.searchedInbounds = this.dbInbounds.slice();
+                }
+            },
+
+			// 〔中文注释〕: 新增一个专门用于生成“一键配置”二维码的方法
+
+			
+    // 【修改后】: 按照固定长度 2,4,6,8,10,12,14,16 来生成 shortIds
+    generateShortIds() {
+        const chars = "0123456789abcdef"; // 只使用十六进制字符
+        const lengths = [2, 4, 6, 8, 10, 12, 14, 16];
+        const shortIds = [];
+        for (const len of lengths) {
+            let shortId = "";
+            for (let j = 0; j < len; j++) {
+                shortId += chars[Math.floor(Math.random() * chars.length)];
+            }
+            shortIds.push(shortId);
+        }
+        return shortIds;
+    },
+
+
+
+            // 【中文注释】: 以下是新增和修改后的方法，用于处理“一键配置”和“订阅转换”
+            // 【中文注释】: 打开“一键配置”模态框
+
+
+            // 【中文注释】: 处理“一键配置”模态框的确认操作
+
+
+            // 【中文注释】: 处理“一键配置”模态框的取消操作
+
+
+            // 【中文注释】: 创建 VLESS + Reality 入站的具体实现
+
+
+
+
+            // 【中文注释】: 这是修复后的 copyLink 方法
+            async copyLink(linkToCopy) {
+                const link = linkToCopy || this.inboundLink;
+                if (!link) {
+                    this.$message.warning('没有可复制的链接。');
+                    return;
+                }
+
+                // 【中文注释】: 优先使用 Clipboard API，但它需要安全上下文 (HTTPS)
+                if (navigator.clipboard && window.isSecureContext) {
+                    try {
+                        await navigator.clipboard.writeText(link);
+                        this.$message.success('链接已成功复制到剪贴板！');
+                        return;
+                    } catch (err) {
+                        console.error('Clipboard API 复制失败，将尝试回退方法:', err);
+                        // 如果失败，则继续执行下面的回退方法
+                    }
+                }
+
+                // 【中文注释】: 回退方案，使用 document.execCommand，兼容性更好
+                const textArea = document.createElement("textarea");
+                textArea.value = link;
+                // 将输入框移动到屏幕外，防止干扰
+                textArea.style.position = "absolute";
+                textArea.style.left = "-9999px";
+                textArea.setAttribute("readonly", "");
+
+                document.body.appendChild(textArea);
+                
+                // 选择输入框中的内容
+                textArea.select();
+                
+                try {
+                    // 执行复制命令
+                    document.execCommand('copy');
+                    this.$message.success('链接已成功复制到剪贴板！');
+                } catch (err) {
+                    console.error('execCommand 复制失败:', err);
+                    this.$message.error('复制失败，请手动复制。');
+                } finally {
+                    // 无论成功与否，最后都移除这个临时输入框
+                    document.body.removeChild(textArea);
+                }
+            },
+            
+            // 检查入站是否被选中
+            isInboundSelected(inboundId) {
+                return this.selectedInbounds.includes(inboundId);
+            },
+            
+            // 切换入站选中状态
+            toggleInboundSelection(inboundId, checked) {
+                if (checked) {
+                    if (!this.selectedInbounds.includes(inboundId)) {
+                        this.selectedInbounds.push(inboundId);
+                    }
+                } else {
+                    const index = this.selectedInbounds.indexOf(inboundId);
+                    if (index > -1) {
+                        this.selectedInbounds.splice(index, 1);
+                    }
+                }
+            },
+            
+            // 获取选中的入站
+            getSelectedInbounds() {
+                return this.dbInbounds.filter(inbound => this.selectedInbounds.includes(inbound.id));
+            },
+            
+            // 全选当前显示的入站
+            selectAllInbounds() {
+                const visibleInbounds = this.searchedInbounds || this.dbInbounds;
+                visibleInbounds.forEach(inbound => {
+                    if (!this.selectedInbounds.includes(inbound.id)) {
+                        this.selectedInbounds.push(inbound.id);
+                    }
+                });
+                this.$message.info(`已选中 ${this.selectedInbounds.length} 个节点`);
+            },
+            
+            // 取消全选
+            unselectAllInbounds() {
+                const oldCount = this.selectedInbounds.length;
+                this.selectedInbounds = [];
+                if (oldCount > 0) {
+                    this.$message.info('已取消所有选择');
+                }
+            },
+
+
+            generalActions(action) {
+                switch (action.key) {
+                    case "import":
+                        this.importInbound();
+                        break;
+                    case "resetInbounds":
+                        this.resetAllTraffic();
+                        break;
+                    case "resetClients":
+                        this.resetAllClientTraffics(-1);
+                        break;
+                    case "delDepletedClients":
+                        this.delDepletedClients(-1)
+                        break;
+                }
+            },
+            exportActions(action) {
+                switch (action.key) {
+                    case "export":
+                        this.exportAllLinks();
+                        break;
+                    case "subs":
+                        this.exportAllSubs();
+                        break;
+                    case "exportTotalSubs":
+                        this.exportTotalSubs();
+                        break;
+                    case "exportSelected":
+                        this.exportSelectedLinks();
+                        break;
+                    case "exportSelectedSubs":
+                        this.exportSelectedSubs();
+                        break;
+                    case "deleteSelected":
+                        this.deleteSelectedInbounds();
+                        break;
+                }
+            },
+            clickAction(action, dbInbound) {
+                switch (action.key) {
+                    case "qrcode":
+                        this.showQrcode(dbInbound.id);
+                        break;
+                    case "showInfo":
+                        this.showInfo(dbInbound.id);
+                        break;
+                    case "edit":
+                        this.openEditInbound(dbInbound.id);
+                        break;
+                    case "addClient":
+                        this.openAddClient(dbInbound.id)
+                        break;
+                    case "addBulkClient":
+                        this.openAddBulkClient(dbInbound.id)
+                        break;
+                    case "export":
+                        this.inboundLinks(dbInbound.id);
+                        break;
+                    case "subs":
+                        this.exportSubs(dbInbound.id);
+                        break;
+                    case "clipboard":
+                        this.copy(dbInbound.id);
+                        break;
+                    case "resetTraffic":
+                        this.resetTraffic(dbInbound.id);
+                        break;
+                    case "resetClients":
+                        this.resetAllClientTraffics(dbInbound.id);
+                        break;
+                    case "clone":
+                        this.openCloneInbound(dbInbound);
+                        break;
+                    case "delete":
+                        this.delInbound(dbInbound.id);
+                        break;
+                    case "delDepletedClients":
+                        this.delDepletedClients(dbInbound.id)
+                        break;
+                }
+            },
+            openCloneInbound(dbInbound) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.cloneInbound"}} \"' + dbInbound.remark + '\"',
+                    content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
+                    okText: '{{ i18n "pages.inbounds.cloneInboundOk"}}',
+                    class: themeSwitcher.currentTheme,
+                    cancelText: '{{ i18n "cancel" }}',
+                    onOk: () => {
+                        const baseInbound = dbInbound.toInbound();
+                        dbInbound.up = 0;
+                        dbInbound.down = 0;
+                        this.cloneInbound(baseInbound, dbInbound);
+                    },
+                });
+            },
+            async cloneInbound(baseInbound, dbInbound) {
+                const data = {
+                    up: dbInbound.up,
+                    down: dbInbound.down,
+                    total: dbInbound.total,
+                    remark: dbInbound.remark + " - Cloned",
+                    enable: dbInbound.enable,
+                    expiryTime: dbInbound.expiryTime,
+
+                    listen: '',
+                    port: RandomUtil.randomInteger(10000, 60000),
+                    protocol: baseInbound.protocol,
+                    settings: Inbound.Settings.getSettings(baseInbound.protocol).toString(),
+                    streamSettings: baseInbound.stream.toString(),
+                    sniffing: baseInbound.sniffing.toString(),
+                };
+                await this.submit('/panel/api/inbounds/add', data, inModal);
+            },
+            openAddInbound() {
+                inModal.show({
+                    title: '{{ i18n "pages.inbounds.addInbound"}}',
+                    okText: '{{ i18n "create"}}',
+                    cancelText: '{{ i18n "close" }}',
+                    confirm: async (inbound, dbInbound) => {
+                        await this.addInbound(inbound, dbInbound, inModal);
+                    },
+                    isEdit: false
+                });
+            },
+            openEditInbound(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const inbound = dbInbound.toInbound();
+                inModal.show({
+                    title: '{{ i18n "pages.inbounds.modifyInbound"}}',
+                    okText: '{{ i18n "update"}}',
+                    cancelText: '{{ i18n "close" }}',
+                    inbound: inbound,
+                    dbInbound: dbInbound,
+                    confirm: async (inbound, dbInbound) => {
+                        await this.updateInbound(inbound, dbInbound);
+                    },
+                    isEdit: true
+                });
+            },
+            async addInbound(inbound, dbInbound) {
+                const data = {
+                    up: dbInbound.up,
+                    down: dbInbound.down,
+                    total: dbInbound.total,
+                    remark: dbInbound.remark,
+                    enable: dbInbound.enable,
+                    expiryTime: dbInbound.expiryTime,
+
+                   // 新增这一行
+                   deviceLimit: dbInbound.deviceLimit,
+
+                    listen: inbound.listen,
+                    port: inbound.port,
+                    protocol: inbound.protocol,
+                    settings: inbound.settings.toString(),
+                };
+                if (inbound.canEnableStream()){
+                  data.streamSettings = inbound.stream.toString();
+                } else if (inbound.stream?.sockopt) {
+                  data.streamSettings = JSON.stringify({ sockopt: inbound.stream.sockopt.toJson() }, null, 2);
+                }
+                data.sniffing = inbound.sniffing.toString();
+
+                await this.submit('/panel/api/inbounds/add', data, inModal);
+            },
+            async updateInbound(inbound, dbInbound) {
+                const data = {
+                    up: dbInbound.up,
+                    down: dbInbound.down,
+                    total: dbInbound.total,
+                    remark: dbInbound.remark,
+                    enable: dbInbound.enable,
+                    expiryTime: dbInbound.expiryTime,
+                   // 新增这一行
+                   deviceLimit: dbInbound.deviceLimit,
+
+                    listen: inbound.listen,
+                    port: inbound.port,
+                    protocol: inbound.protocol,
+                    settings: inbound.settings.toString(),
+                };
+                if (inbound.canEnableStream()){
+                  data.streamSettings = inbound.stream.toString();
+                } else if (inbound.stream?.sockopt) {
+                  data.streamSettings = JSON.stringify({ sockopt: inbound.stream.sockopt.toJson() }, null, 2);
+                }
+                data.sniffing = inbound.sniffing.toString();
+
+                await this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, data, inModal);
+            },
+            openAddClient(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                clientModal.show({
+                    title: '{{ i18n "pages.client.add"}}',
+                    okText: '{{ i18n "pages.client.submitAdd"}}',
+                    dbInbound: dbInbound,
+                    confirm: async (clients, dbInboundId) => {
+                        await this.addClient(clients, dbInboundId, clientModal);
+                    },
+                    isEdit: false
+                });
+            },
+            openAddBulkClient(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                clientsBulkModal.show({
+                    title: '{{ i18n "pages.client.bulk"}} ' + dbInbound.remark,
+                    okText: '{{ i18n "pages.client.bulk"}}',
+                    dbInbound: dbInbound,
+                    confirm: async (clients, dbInboundId) => {
+                        await this.addClient(clients, dbInboundId, clientsBulkModal);
+                    },
+                });
+            },
+            openEditClient(dbInboundId, client) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                clients = this.getInboundClients(dbInbound);
+                index = this.findIndexOfClient(dbInbound.protocol, clients, client);
+                clientModal.show({
+                    title: '{{ i18n "pages.client.edit"}}',
+                    okText: '{{ i18n "pages.client.submitEdit"}}',
+                    dbInbound: dbInbound,
+                    index: index,
+                    confirm: async (client, dbInboundId, clientId) => {
+                        clientModal.loading();
+                        await this.updateClient(client, dbInboundId, clientId);
+                        clientModal.close();
+                    },
+                    isEdit: true
+                });
+            },
+            findIndexOfClient(protocol, clients, client) {
+                switch (protocol) {
+                    case Protocols.TROJAN:
+                    case Protocols.SHADOWSOCKS:
+                        return clients.findIndex(item => item.password === client.password && item.email === client.email);
+                    default: return clients.findIndex(item => item.id === client.id && item.email === client.email);
+                }
+            },
+            async addClient(clients, dbInboundId, modal) {
+                const data = {
+                    id: dbInboundId,
+                    settings: '{"clients": [' + clients.toString() + ']}',
+                };
+                await this.submit(`/panel/api/inbounds/addClient`, data, modal);
+            },
+            async updateClient(client, dbInboundId, clientId) {
+                const data = {
+                    id: dbInboundId,
+                    settings: '{"clients": [' + client.toString() + ']}',
+                };
+                await this.submit(`/panel/api/inbounds/updateClient/${clientId}`, data, clientModal);
+            },
+            resetTraffic(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' #' + dbInboundId,
+                    content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                    class: themeSwitcher.currentTheme,
+                    okText: '{{ i18n "reset"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => {
+                        const inbound = dbInbound.toInbound();
+                        dbInbound.up = 0;
+                        dbInbound.down = 0;
+                        this.updateInbound(inbound, dbInbound);
+                    },
+                });
+            },
+            delInbound(dbInboundId) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.deleteInbound"}}' + ' #' + dbInboundId,
+                    content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
+                    class: themeSwitcher.currentTheme,
+                    okText: '{{ i18n "delete"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/panel/api/inbounds/del/' + dbInboundId),
+                });
+            },
+            delClient(dbInboundId, client,confirmation = true) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                clientId = this.getClientId(dbInbound.protocol, client);
+                if (confirmation){
+                    this.$confirm({
+                        title: '{{ i18n "pages.inbounds.deleteClient"}}' + ' ' + client.email,
+                        content: '{{ i18n "pages.inbounds.deleteClientContent"}}',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "delete"}}',
+                        cancelText: '{{ i18n "cancel"}}',
+                        onOk: () => this.submit(`/panel/api/inbounds/${dbInboundId}/delClient/${clientId}`),
+                    });
+                } else {
+                    this.submit(`/panel/api/inbounds/${dbInboundId}/delClient/${clientId}`);
+                }
+            },
+            getSubGroupClients(dbInbounds, currentClient) {
+                const response = {
+                  inbounds: [],
+                  clients: [],
+                  editIds: []
+                }
+                if (dbInbounds && dbInbounds.length > 0 && currentClient) {
+                    dbInbounds.forEach((dbInboundItem) => {
+                        const dbInbound = new DBInbound(dbInboundItem);
+                        if (dbInbound) {
+                            const inbound = dbInbound.toInbound();
+                            if (inbound) {
+                                const clients = inbound.clients;
+                                if (clients.length > 0) {
+                                    clients.forEach((client) => {
+                                        if (client['subId'] === currentClient['subId']) {
+                                            client['inboundId'] = dbInboundItem.id
+                                            client['clientId'] = this.getClientId(dbInbound.protocol, client)
+                                            response.inbounds.push(dbInboundItem.id)
+                                            response.clients.push(client)
+                                            response.editIds.push(client['clientId'])
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    })
+                }
+                return response;
+            },
+            getClientId(protocol, client) {
+                switch (protocol) {
+                    case Protocols.TROJAN: return client.password;
+                    case Protocols.SHADOWSOCKS: return client.email;
+                    default: return client.id;
+                }
+            },
+            checkFallback(dbInbound) {
+                newDbInbound = new DBInbound(dbInbound);
+                if (dbInbound.listen.startsWith("@")){
+                    rootInbound = this.inbounds.find((i) =>
+                        i.isTcp &&
+                        ['trojan','vless'].includes(i.protocol) &&
+                        i.settings.fallbacks.find(f => f.dest === dbInbound.listen)
+                    );
+                    if (rootInbound) {
+                        newDbInbound.listen = rootInbound.listen;
+                        newDbInbound.port = rootInbound.port;
+                        newInbound = newDbInbound.toInbound();
+                        newInbound.stream.security = rootInbound.stream.security;
+                        newInbound.stream.tls = rootInbound.stream.tls;
+                        newInbound.stream.externalProxy = rootInbound.stream.externalProxy;
+                        newDbInbound.streamSettings = newInbound.stream.toString();
+                    }
+                }
+                return newDbInbound;
+            },
+            showQrcode(dbInboundId, client) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                newDbInbound = this.checkFallback(dbInbound);
+                qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
+            },
+            showInfo(dbInboundId, client) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                index=0;
+                if (dbInbound.isMultiUser()){
+                    inbound = dbInbound.toInbound();
+                    clients = inbound.clients;
+                    index = this.findIndexOfClient(dbInbound.protocol, clients, client);
+                }
+                newDbInbound = this.checkFallback(dbInbound);
+                infoModal.show(newDbInbound, index);
+            },
+            switchEnable(dbInboundId,state) {
+              dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+              dbInbound.enable = state;
+              this.submit(`/panel/api/inbounds/update/${dbInboundId}`, dbInbound);
+            },
+            async switchEnableClient(dbInboundId, client) {
+                this.loading()
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                inbound = dbInbound.toInbound();
+                clients = inbound.clients;
+                index = this.findIndexOfClient(dbInbound.protocol, clients, client);
+                clients[index].enable = !clients[index].enable;
+                clientId = this.getClientId(dbInbound.protocol, clients[index]);
+                await this.updateClient(clients[index], dbInboundId, clientId);
+                this.loading(false);
+            },
+            async submit(url, data, modal) {
+                const msg = await HttpUtil.postWithModal(url, data, modal);
+                if (msg.success) {
+                    await this.getDBInbounds();
+                }
+            },
+
+            getInboundClients(dbInbound) {
+                return dbInbound.toInbound().clients;
+            },
+			
+            resetClientTraffic(client, dbInboundId, confirmation = true) {
+                if (confirmation){
+                    this.$confirm({
+                        title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,
+                        content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                        class: themeSwitcher.currentTheme,
+                        okText: '{{ i18n "reset"}}',
+                        cancelText: '{{ i18n "cancel"}}',
+                        onOk: () => this.submit('/panel/api/inbounds/' + dbInboundId + '/resetClientTraffic/' + client.email),
+                    })
+                } else {
+                    this.submit('/panel/api/inbounds/' + dbInboundId + '/resetClientTraffic/' + client.email);
+                }
+            },
+            resetAllTraffic() {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.resetAllTrafficTitle"}}',
+                    content: '{{ i18n "pages.inbounds.resetAllTrafficContent"}}',
+                    class: themeSwitcher.currentTheme,
+                    okText: '{{ i18n "reset"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/panel/api/inbounds/resetAllTraffics'),
+                });
+            },
+            resetAllClientTraffics(dbInboundId) {
+                this.$confirm({
+                    title: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficTitle"}}' : '{{ i18n "pages.inbounds.resetAllClientTrafficTitle"}}',
+                    content: dbInboundId > 0 ? '{{ i18n "pages.inbounds.resetInboundClientTrafficContent"}}' : '{{ i18n "pages.inbounds.resetAllClientTrafficContent"}}',
+                    class: themeSwitcher.currentTheme,
+                    okText: '{{ i18n "reset"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/panel/api/inbounds/resetAllClientTraffics/' + dbInboundId),
+                })
+            },
+            delDepletedClients(dbInboundId) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.delDepletedClientsTitle"}}',
+                    content: '{{ i18n "pages.inbounds.delDepletedClientsContent"}}',
+                    class: themeSwitcher.currentTheme,
+                    okText: '{{ i18n "delete"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/panel/api/inbounds/delDepletedClients/' + dbInboundId),
+                })
+            },
+            isExpiry(dbInbound, index) {
+                return dbInbound.toInbound().isExpiry(index);
+            },
+            getUpStats(dbInbound, email) {
+                if (email.length == 0) return 0;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                return clientStats ? clientStats.up : 0;
+            },
+            getDownStats(dbInbound, email) {
+                if (email.length == 0) return 0;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                return clientStats ? clientStats.down : 0;
+            },
+            getSumStats(dbInbound, email) {
+                if (email.length == 0) return 0;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                return clientStats ? clientStats.up + clientStats.down : 0;
+            },
+            getAllTimeClient(dbInbound, email) {
+                if (email.length == 0) return 0;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                if (!clientStats) return 0;
+                return clientStats.allTime || (clientStats.up + clientStats.down);
+            },
+            getRemStats(dbInbound, email) {
+                if (email.length == 0) return 0;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                if (!clientStats) return 0;
+                remained = clientStats.total - (clientStats.up + clientStats.down);
+                return remained>0 ? remained : 0;
+            },
+            clientStatsColor(dbInbound, email) {
+                if (email.length == 0) return ColorUtils.clientUsageColor();
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                return ColorUtils.clientUsageColor(clientStats, app.trafficDiff)
+            },
+            statsProgress(dbInbound, email) {
+                if (email.length == 0) return 100;
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                if (!clientStats) return 0;
+                if (clientStats.total == 0) return 100;
+                return 100*(clientStats.down + clientStats.up)/clientStats.total;
+            },
+            expireProgress(expTime, reset) {
+                now = new Date().getTime();
+                remainedSeconds = expTime < 0 ? -expTime/1000 : (expTime-now)/1000;
+                resetSeconds = reset * 86400;
+                if (remainedSeconds >= resetSeconds) return 0;
+                return 100*(1-(remainedSeconds/resetSeconds));
+            },
+            remainedDays(expTime){
+                if (expTime == 0) return null;
+                if (expTime < 0) return TimeFormatter.formatSecond(expTime/-1000);
+                now = new Date().getTime();
+                if (expTime < now) return '{{ i18n "depleted" }}';
+                return TimeFormatter.formatSecond((expTime-now)/1000);
+            },
+            statsExpColor(dbInbound, email){
+                if (email.length == 0) return '#7a316f';
+                clientStats = dbInbound.clientStats.find(stats => stats.email === email);
+                if (!clientStats) return '#7a316f';
+                statsColor = ColorUtils.usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
+                expColor = ColorUtils.usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
+                switch (true) {
+                    case statsColor == "red" || expColor == "red":
+                        return "#cf3c3c"; // Red
+                    case statsColor == "orange" || expColor == "orange":
+                        return "#f37b24"; // Orange
+                    case statsColor == "green" || expColor == "green":
+                        return "#008771"; // Green
+                    default:
+                        return "#7a316f"; // purple
+                }
+            },
+            isClientEnabled(dbInbound, email) {
+                clientStats = dbInbound.clientStats ? dbInbound.clientStats.find(stats => stats.email === email) : null;
+                return clientStats ? clientStats['enable'] : true;
+            },
+            isClientOnline(email) {
+                return this.onlineClients.includes(email);
+            },
+            getLastOnline(email) {
+                return this.lastOnlineMap[email] || null
+            },
+            formatLastOnline(email) {
+                const ts = this.getLastOnline(email)
+                if (!ts) return '-'
+                if (this.datepicker === 'gregorian') {
+                    return DateUtil.formatMillis(ts)
+                }
+                return DateUtil.convertToJalalian(moment(ts))
+            },
+            isRemovable(dbInboundId) {
+                return this.getInboundClients(this.dbInbounds.find(row => row.id === dbInboundId)).length > 1;
+            },
+            inboundLinks(dbInboundId) {
+                dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                newDbInbound = this.checkFallback(dbInbound);
+                
+                // 获取链接内容
+                const links = newDbInbound.genInboundLinks(this.remarkModel).trim();
+                
+                // 检查是否有可用的节点链接
+                if (!links) {
+                    txtModal.show('{{ i18n "pages.inbounds.export"}}', '该入站没有可用的节点。', newDbInbound.remark);
+                } else {
+                    txtModal.show('{{ i18n "pages.inbounds.export"}}', links, newDbInbound.remark);
+                }
+            },
+            exportSubs(dbInboundId) {
+                const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+                const clients = this.getInboundClients(dbInbound);
+                let subLinks = []
+                
+                // 检查订阅服务是否启用
+                if (!this.subSettings.enable) {
+                    txtModal.show(
+                        '导出订阅',
+                        '订阅服务未启用，请先在设置中启用订阅服务。',
+                        dbInbound.remark + "-Subs");
+                    return;
+                }
+                
+                // 检查 subURI 是否配置
+                if (!this.subSettings.subURI || this.subSettings.subURI.trim() === '') {
+                    txtModal.show(
+                        '导出订阅',
+                        '订阅服务 URI 未配置，请在设置中配置订阅 URI。',
+                        dbInbound.remark + "-Subs");
+                    return;
+                }
+                
+                if (clients != null){
+                    clients.forEach(c => {
+                        if (c.subId && c.subId.length>0){
+                            subLinks.push(this.subSettings.subURI + c.subId)
+                        }
+                    })
+                }
+                
+                if (subLinks.length === 0) {
+                    txtModal.show(
+                        '导出订阅',
+                        '该入站没有可用的订阅链接。',
+                        dbInbound.remark + "-Subs");
+                } else {
+                    txtModal.show(
+                        '导出订阅',
+                        [...new Set(subLinks)].join('\r\n'),
+                        dbInbound.remark + "-Subs");
+                }
+            },
+            importInbound() {
+                promptModal.open({
+                    title: '{{ i18n "pages.inbounds.importInbound" }}',
+                    type: 'textarea',
+                    value: '',
+                    okText: '{{ i18n "pages.inbounds.import" }}',
+                    confirm: async (dbInboundText) => {
+                        await this.submit('/panel/api/inbounds/import', {data: dbInboundText}, promptModal);
+                    },
+                });
+            },
+            exportAllSubs() {
+                let subLinks = []
+                
+                // 检查订阅服务是否启用
+                if (!this.subSettings.enable) {
+                    txtModal.show(
+                        '导出订阅',
+                        '订阅服务未启用，请先在设置中启用订阅服务。',
+                        'All-Inbounds-Subs');
+                    return;
+                }
+                
+                // 检查 subURI 是否配置
+                if (!this.subSettings.subURI || this.subSettings.subURI.trim() === '') {
+                    txtModal.show(
+                        '导出订阅',
+                        '订阅服务 URI 未配置，请在设置中配置订阅 URI。',
+                        'All-Inbounds-Subs');
+                    return;
+                }
+                
+                for (const dbInbound of this.dbInbounds) {
+                    const clients = this.getInboundClients(dbInbound);
+                    if (clients != null){
+                        clients.forEach(c => {
+                            if (c.subId && c.subId.length>0){
+                                const subLink = this.subSettings.subURI + c.subId;
+                                subLinks.push(subLink);
+                            }
+                        })
+                    }
+                }
+                
+                if (subLinks.length === 0) {
+                    txtModal.show(
+                        '导出订阅',
+                        '没有可用的订阅链接。',
+                        'All-Inbounds-Subs');
+                } else {
+                    txtModal.show(
+                        '导出订阅',
+                        [...new Set(subLinks)].join('\r\n'),
+                        'All-Inbounds-Subs');
+                }
+            },
+            exportAllLinks() {
+                let copyText = [];
+                for (const dbInbound of this.dbInbounds) {
+                    copyText.push(dbInbound.genInboundLinks(this.remarkModel));
+                }
+                
+                // 检查是否有可用的节点链接
+                const allLinks = copyText.join('\r\n').trim();
+                if (!allLinks) {
+                    txtModal.show('{{ i18n "pages.inbounds.export"}}', '没有可用的节点。', 'All-Inbounds');
+                } else {
+                    txtModal.show('{{ i18n "pages.inbounds.export"}}', allLinks, 'All-Inbounds');
+                }
+            },
+            
+            // 导出选中的节点链接
+            exportSelectedLinks() {
+                if (this.selectedInbounds.length === 0) {
+                    this.$message.warning('请先选择要导出的节点');
+                    return;
+                }
+                
+                let copyText = [];
+                for (const dbInbound of this.getSelectedInbounds()) {
+                    copyText.push(dbInbound.genInboundLinks(this.remarkModel));
+                }
+                
+                // 检查是否有可用的节点链接
+                const selectedLinks = copyText.join('\r\n').trim();
+                if (!selectedLinks) {
+                    txtModal.show('导出选中链接', '选中的节点没有可用的链接。', 'Selected-Inbounds');
+                } else {
+                    txtModal.show('导出选中链接', selectedLinks, 'Selected-Inbounds');
+                }
+            },
+            
+            // 导出选中的节点订阅
+            exportSelectedSubs() {
+                if (this.selectedInbounds.length === 0) {
+                    this.$message.warning('请先选择要导出订阅的节点');
+                    return;
+                }
+                
+                // 检查订阅服务是否启用
+                if (!this.subSettings.enable) {
+                    txtModal.show('导出选中订阅', '订阅服务未启用，请先在设置中启用订阅服务。', 'Selected-Inbounds-Subs');
+                    return;
+                }
+                
+                // 检查 subURI 是否配置
+                if (!this.subSettings.subURI || this.subSettings.subURI.trim() === '') {
+                    txtModal.show('导出选中订阅', '订阅服务 URI 未配置，请在设置中配置订阅 URI。', 'Selected-Inbounds-Subs');
+                    return;
+                }
+                
+                let subLinks = [];
+                for (const dbInbound of this.getSelectedInbounds()) {
+                    const clients = this.getInboundClients(dbInbound);
+                    if (clients != null) {
+                        clients.forEach(c => {
+                            if (c.subId && c.subId.length > 0) {
+                                const subLink = this.subSettings.subURI + c.subId;
+                                subLinks.push(subLink);
+                            }
+                        });
+                    }
+                }
+                
+                if (subLinks.length === 0) {
+                    txtModal.show('导出选中订阅', '选中的节点没有可用的订阅链接。', 'Selected-Inbounds-Subs');
+                } else {
+                    txtModal.show('导出选中订阅', [...new Set(subLinks)].join('\r\n'), 'Selected-Inbounds-Subs');
+                }
+            },
+            
+            // 导出总订阅（包含所有节点）
+            async exportTotalSubs() {
+                // 检查订阅服务是否启用
+                if (!this.subSettings.enable) {
+                    txtModal.show(
+                        '导出总订阅',
+                        '订阅服务未启用，请先在设置中启用订阅服务。',
+                        'Total-Subs');
+                    return;
+                }
+                
+                // 检查 subURI 是否配置
+                if (!this.subSettings.subURI || this.subSettings.subURI.trim() === '') {
+                    txtModal.show(
+                        '导出总订阅',
+                        '订阅服务 URI 未配置，请在设置中配置订阅 URI。',
+                        'Total-Subs');
+                    return;
+                }
+                
+                // 检查是否有节点
+                if (this.dbInbounds.length === 0) {
+                    txtModal.show(
+                        '导出总订阅',
+                        '没有可用的节点。',
+                        'Total-Subs');
+                    return;
+                }
+                
+                try {
+                    // 首先尝试获取现有的总订阅ID
+                    let response = await HttpUtil.get('/panel/api/sub/total-id');
+                    let totalId = response?.obj;
+                    
+                    // 如果没有总订阅ID，询问用户是否要生成
+                    if (!totalId) {
+                        const shouldGenerate = await new Promise(resolve => {
+                            this.$confirm({
+                                title: '生成总订阅ID',
+                                content: '您还没有总订阅ID，是否要为总订阅生成一个随机ID？',
+                                okText: '生成',
+                                cancelText: '取消',
+                                onOk: () => resolve(true),
+                                onCancel: () => resolve(false)
+                            });
+                        });
+                        
+                        if (!shouldGenerate) {
+                            return;
+                        }
+                        
+                        // 生成新的总订阅ID
+                        response = await HttpUtil.get('/panel/api/sub/total-id?generate=true');
+                        totalId = response?.obj;
+                        
+                        if (!totalId) {
+                            throw new Error('生成总订阅ID失败');
+                        }
+                    }
+                    
+                    // 生成总订阅链接（使用随机生成的ID）
+                    const totalSubLink = this.subSettings.subURI + totalId;
+                    const totalJsonSubLink = this.subSettings.subJsonURI + totalId;
+                    
+                    let linkText = '总订阅链接：\n' + totalSubLink;
+                    if (this.subSettings.subJsonURI && this.subSettings.subJsonURI.trim() !== '') {
+                        linkText += '\n\n总订阅 JSON 链接：\n' + totalJsonSubLink;
+                    }
+                    
+                    linkText += '\n\n注意：总订阅包含所有启用的节点，请妥善保管此链接。';
+                    
+                    txtModal.show(
+                        '导出总订阅',
+                        linkText,
+                        'Total-Subs'
+                    );
+                } catch (error) {
+                    this.$message.error('获取总订阅链接失败: ' + error.message);
+                }
+            },
+            
+            // 删除选中的节点
+            async deleteSelectedInbounds() {
+                if (this.selectedInbounds.length === 0) {
+                    this.$message.warning('请先选择要删除的节点');
+                    return;
+                }
+                
+                this.$confirm({
+                    title: '确认删除',
+                    content: `确定要删除选中的 ${this.selectedInbounds.length} 个节点吗？此操作不可恢复！`,
+                    okText: '删除',
+                    okType: 'danger',
+                    cancelText: '取消',
+                    onOk: async () => {
+                        this.loading(true);
+                        const promises = this.selectedInbounds.map(id => 
+                            HttpUtil.post('/panel/api/inbounds/del/' + id)
+                        );
+                        
+                        try {
+                            await Promise.all(promises);
+                            await this.getDBInbounds();
+                            this.$message.success(`已成功删除 ${this.selectedInbounds.length} 个节点`);
+                            this.selectedInbounds = []; // 清空选中列表
+                        } catch (e) {
+                            this.$message.error('删除节点时发生错误: ' + e.message);
+                        } finally {
+                            this.loading(false);
+                        }
+                    }
+                });
+            },
+            copy(dbInboundId) {
+              dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+              txtModal.show('{{ i18n "pages.inbounds.inboundData" }}', JSON.stringify(dbInbound, null, 2));
+            },
+            async startDataRefreshLoop() {
+                while (this.isRefreshEnabled) {
+                    try {
+                        await this.getDBInbounds();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                    await PromiseUtil.sleep(this.refreshInterval);
+                }
+            },
+            toggleRefresh() {
+                localStorage.setItem("isRefreshEnabled", this.isRefreshEnabled);
+                if (this.isRefreshEnabled) {
+                    this.startDataRefreshLoop();
+                }
+            },
+            changeRefreshInterval() {
+                localStorage.setItem("refreshInterval", this.refreshInterval);
+            },
+            async manualRefresh() {
+                if (!this.refreshing) {
+                    this.loadingStates.spinning = true;
+                    await this.getDBInbounds();
+                    this.loadingStates.spinning = false;
+                }
+            },
+            pagination(obj){
+                if (this.pageSize > 0 && obj.length>this.pageSize) {
+                    // Set page options based on object size
+                    sizeOptions = [];
+                    for (i=this.pageSize;i<=obj.length;i=i+this.pageSize) {
+                        sizeOptions.push(i.toString());
+                    }
+                    // Add option to see all in one page
+                    sizeOptions.push(i.toString());
+
+                    p = {
+                        showSizeChanger: true,
+                        size: 'small',
+                        position: 'bottom',
+                        pageSize: this.pageSize,
+                        pageSizeOptions: sizeOptions
+                    };
+                    return p;
+                }
+                return false
+            }
+        },
+        watch: {
+            searchKey: Utils.debounce(function (newVal) {
+                this.searchInbounds(newVal);
+            }, 500)
+        },
+        computed: {
+            total() {
+                let down = 0, up = 0, allTime = 0;
+                let clients = 0, deactive = [], depleted = [], expiring = [];
+                this.dbInbounds.forEach(dbInbound => {
+                    down += dbInbound.down;
+                    up += dbInbound.up;
+                    allTime += (dbInbound.allTime || (dbInbound.up + dbInbound.down));
+                    if (this.clientCount[dbInbound.id]) {
+                        clients += this.clientCount[dbInbound.id].clients;
+                        deactive = deactive.concat(this.clientCount[dbInbound.id].deactive);
+                        depleted = depleted.concat(this.clientCount[dbInbound.id].depleted);
+                        expiring = expiring.concat(this.clientCount[dbInbound.id].expiring);
+                    }
+                });
+                return {
+                    down: down,
+                    up: up,
+                    allTime: allTime,
+                    clients: clients,
+                    deactive: deactive,
+                    depleted: depleted,
+                    expiring: expiring,
+                };
+            }
+        },
+    });
+</script>
+{{ template "page/body_end" .}}
