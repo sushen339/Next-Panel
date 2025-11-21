@@ -95,6 +95,15 @@ func (s *XrayService) GetApiPort() int {
 	return p.GetAPIPort()
 }
 
+// GetOnlineClients 获取当前在线的客户端列表
+// 如果 xray 进程对象不存在(接管外部进程),返回空列表
+func (s *XrayService) GetOnlineClients() []string {
+	if p == nil {
+		// 外部进程无法直接访问在线客户端列表
+		return []string{}
+	}
+	return p.GetOnlineClients()
+}
 
 func (s *XrayService) GetXrayErr() error {
 	if p == nil {
@@ -438,7 +447,14 @@ func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, 
 		logger.Debug("Attempted to fetch Xray traffic, but Xray is not running:", err)
 		return nil, nil, err
 	}
-	apiPort := p.GetAPIPort()
+	// 安全获取 API 端口,支持接管的外部进程
+	apiPort := s.GetApiPort()
+	if apiPort <= 0 {
+		apiPort = xray.GetApiPortFromConfig()
+	}
+	if apiPort <= 0 {
+		return nil, nil, errors.New("无法获取 Xray API 端口")
+	}
 	s.xrayAPI.Init(apiPort)
 	defer s.xrayAPI.Close()
 
@@ -471,11 +487,17 @@ func (s *XrayService) RestartXray(isForce bool) error {
 
 
 	if s.IsXrayRunning() {
-		if !isForce && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
+		// 检查是否需要重启: 如果有进程对象且配置未变,则跳过
+		if !isForce && p != nil && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
 			logger.Debug("It does not need to restart Xray")
 			return nil
 		}
-		p.Stop()
+		// 如果有进程对象,使用进程对象停止;否则使用 pkill
+		if p != nil {
+			p.Stop()
+		} else {
+			xray.KillXrayProcess()
+		}
 	}
 
 	p = xray.NewProcess(xrayConfig)
