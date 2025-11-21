@@ -1,0 +1,42 @@
+#!/sbin/openrc-run
+# Copyright 1999-2025 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+description="Next-Panel - Xray Web Panel"
+
+command="/usr/local/x-ui/x-ui"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+directory="/usr/local/x-ui"
+
+# 环境变量
+export XRAY_VMESS_AEAD_FORCED=false
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath --directory --owner root:root --mode 0755 /usr/local/x-ui
+}
+
+stop() {
+    # 检查是否是"仅关闭面板"模式
+    if [ -f "/usr/local/x-ui/bin/stop_panel_only.flag" ]; then
+        ebegin "Stopping ${RC_SVCNAME} (keeping Xray running)"
+        # 只杀死面板进程，不杀子进程
+        if [ -f "${pidfile}" ]; then
+            kill -TERM $(cat "${pidfile}") 2>/dev/null
+        fi
+        rm -f "${pidfile}"
+        eend $?
+    else
+        # 正常停止，包括所有子进程
+        ebegin "Stopping ${RC_SVCNAME}"
+        start-stop-daemon --stop \
+            --pidfile "${pidfile}" \
+            --exec "${command}"
+        eend $?
+    fi
+}
